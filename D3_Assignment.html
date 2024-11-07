@@ -3,106 +3,415 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D3 Map with Search</title>
+  <title>D3 Assignment</title>
   <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://unpkg.com/d3-tile@1"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
+    @font-face {
+      font-family: 'Slabo';
+      src: url('Slabo27px-Regular.ttf') format('truetype');
     }
-    #map-container {
-      max-width: 800px;
-      margin: 20px auto;
+    body {
+      font-family: 'Slabo', Arial, sans-serif; font-size: 1.2em;
+      margin: 0;
+      padding: 0;
+      background: url('https://i.imgur.com/NrgFc4C.jpeg') no-repeat center center fixed;
+      background-size: cover;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #main-content {
+      transition: margin-right 0.5s ease;
+      width: 100%;
+      max-width: 1000px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     #map {
       width: 100%;
-      height: 600px;
-      border: 1px solid #ccc;
+      max-width: 960px;
+      height: 60vh;
+      max-height: 600px;
+      border-radius: 20px;
+      overflow: hidden;
+      background-color: #fff;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      position: relative;
     }
-    .search-container {
-      margin-bottom: 20px;
-    }
-    .search-container input[type="text"] {
-      padding: 10px;
-      font-size: 14px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 300px;
-    }
-    .search-container button {
-      padding: 10px 20px;
-      font-size: 14px;
+    .help-anchor, .close-btn, .button-container button {
+      background-color: #333;
+      color: white;
       border: none;
-      border-radius: 5px;
+      padding: 10px;
+      border-radius: 30px;
       cursor: pointer;
-      background-color: #007bff;
+      font-size: 14px;
+      font-family: 'Caveat', Arial, sans-serif;
+      transition: background-color 0.3s ease;
+    }
+    .help-anchor:hover, .close-btn:hover, .button-container button:hover {
+      background-color: #555;
+    }
+    .help-anchor {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1100;
+    }
+    .tooltip {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      pointer-events: none;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      z-index: 1500;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 300px;
+      text-align: center;
+      font-family: 'Caveat', Arial, sans-serif;
+    }
+    .controls-container, .slider-wrapper {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .slider-wrapper {
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .slider-container {
+      font-size: 16px;
+      text-align: center;
+      margin-bottom: 10px;
       color: white;
     }
-    .search-container button:hover {
-      background-color: #0056b3;
+    #townCount {
+      color: white;
+    }
+    input[type="range"] {
+      width: 100%;
+      max-width: 300px;
+    }
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 300px;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+      transform: translateX(100%);
+      transition: transform 0.5s ease;
+      overflow-y: auto;
+      font-family: 'Caveat', Arial, sans-serif; font-size: 1.2em;
+      z-index: 1000;
+    }
+    .drawer.open {
+      transform: translateX(0);
+    }
+    .gif-container {
+      position: fixed;
+      bottom: 20px;
+      right: 320px;
+      transform: translateX(300px);
+      visibility: hidden;
+      transition: transform 0.5s ease, visibility 0s 0.5s;
+      z-index: 1001;
+    }
+    .drawer.open ~ .gif-container {
+      visibility: visible;
+      transform: translateX(0);
+    }
+    .gif-container img {
+      max-width: 180px;
+      height: auto;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      display: none;
+      z-index: 999;
+    }
+    .overlay.show {
+      display: block;
+    }
+    circle {
+      cursor: pointer;
+      transition: fill 0.3s ease, stroke-width 0.3s ease;
+    }
+    circle:hover {
+      stroke-width: 2;
+      fill: #ff5733;
     }
   </style>
 </head>
 <body>
-  <div id="map-container">
-    <div class="search-container">
-      <input type="text" id="searchInput" placeholder="Search town...">
-      <button id="searchButton">Search</button>
-    </div>
-    <div id="map"></div>
+  <div class="help-anchor" id="helpAnchor">How it works</div>
+  <div id="header" style="background: rgba(0, 0, 0, 0.7); padding: 20px; border-radius: 20px; text-align: center; color: white; margin-bottom: 20px;">
+    <h1 style="font-size: 2.5em;">D3 Assignment</h1>
+    <p>Name: Nouman Affaq, Id: 2630838</p>
   </div>
-
+  <div id="main-content">
+    <div id="map">
+      <svg width="100%" height="100%">
+        <defs>
+          <filter id="blur-filter" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" />
+          </filter>
+        </defs>
+      </svg>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+    <div class="controls-container">
+      <div class="slider-wrapper">
+        <div class="slider-container">
+          <label for="townSlider">Number of towns: <span id="townCount">50</span></label>
+          <input type="range" id="townSlider" min="1" max="100" value="50">
+        </div>
+        <div class="button-container">
+          <button id="reloadButton">Reload Data</button>
+          <button id="zoomInButton">Zoom In</button>
+          <button id="zoomOutButton">Zoom Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="helpModal">
+    <div class="modal-content">
+      <h2>How It Works</h2>
+      <ul style="text-align: left;">
+        <li>Hover over a town to see a tooltip with its name, county, and population.</li>
+        <li>Adjust the slider to change the number of towns displayed on the map.</li>
+        <li>Use the 'Reload Data' button to refresh the displayed towns.</li>
+        <li>Click on a town to open the drawer with detailed information, including population, county, coordinates, and the nearest towns by distance.</li>
+        <li>Click anywhere other than the drawer to make the drawer go back.</li>
+        <li>The size of each bubble is proportional to the town's population.</li>
+        <li><strong>Zoom in/out:</strong> Use the 'Zoom In' and 'Zoom Out' buttons to zoom the map in and out. The towns and map adjust accordingly.</li>
+      </ul>
+      <button class="close-btn" id="closeModal">Close</button>
+    </div>
+  </div>
+  <div class="drawer" id="drawer">
+    <h2 id="townName">Town Name</h2>
+    <p id="townDetails">Details will appear here...</p>
+    <div class="nearest-towns">
+      <h3>Nearest Towns:</h3>
+      <ul id="nearestTownsList"></ul>
+    </div>
+  </div>
+  <div class="gif-container">
+    <img src="will.png" alt="GIF">
+  </div>
+  <div class="overlay" id="overlay"></div>
   <script>
-    // Sample town data
-    const townsData = [
-      { name: "New York", population: "8.623 million", lat: 40.7128, lon: -74.0060 },
-      { name: "Los Angeles", population: "3.979 million", lat: 34.0522, lon: -118.2437 },
-      { name: "Chicago", population: "2.705 million", lat: 41.8781, lon: -87.6298 },
-      { name: "Houston", population: "2.325 million", lat: 29.7604, lon: -95.3698 },
-      { name: "Phoenix", population: "1.680 million", lat: 33.4484, lon: -112.0740 }
-      // Add more towns as needed
-    ];
+    const mapWidth = 960, mapHeight = 600;
+    let displayedTowns = 50, townsData = [], zoomLevel = 1;
+    const zoomStep = 0.2;
+    const initialZoomLevel = 1; // Store initial zoom level
 
-    // D3 map setup
-    const svg = d3.select("#map")
-                  .append("svg")
-                  .attr("width", "100%")
-                  .attr("height", "100%");
+    const drawer = document.getElementById("drawer"),
+          overlay = document.getElementById("overlay"),
+          mainContent = document.getElementById("main-content"),
+          tooltip = d3.select("#tooltip"),
+          svgMap = d3.select("#map svg");
 
-    // Function to render towns on the map
-    function renderTowns(data) {
-      svg.selectAll("circle")
-         .data(data)
-         .enter()
-         .append("circle")
-         .attr("cx", d => projection([d.lon, d.lat])[0])
-         .attr("cy", d => projection([d.lon, d.lat])[1])
-         .attr("r", 5)
-         .attr("fill", "steelblue")
-         .attr("opacity", 0.7)
-         .on("mouseover", function(d) {
-            // Tooltip or other interaction on mouseover
-            console.log("Mouseover:", d.name);
-         })
-         .on("click", function(d) {
-            // Handle click event, e.g., show details
-            console.log("Clicked:", d.name);
-         });
+    const mapProjection = d3.geoMercator().scale(1500).center([0, 55]).translate([mapWidth / 2, mapHeight / 2]);
+    const tileGroup = svgMap.append("g");
+    const townGroup = svgMap.append("g");
+
+    let selectedTownSymbol = null;
+    let selectedTown = null; // Store selected town data
+
+    document.getElementById("helpAnchor").addEventListener('click', () => {
+      document.getElementById("helpModal").style.display = 'flex';
+    });
+    document.getElementById("closeModal").addEventListener('click', () => {
+      document.getElementById("helpModal").style.display = 'none';
+    });
+    document.getElementById("townSlider").addEventListener("input", function () {
+      displayedTowns = this.value;
+      document.getElementById("townCount").textContent = displayedTowns;
+      loadAndPlotTownData(displayedTowns);
+    });
+    document.getElementById("reloadButton").addEventListener("click", () => loadAndPlotTownData(displayedTowns));
+
+    function loadAndPlotTownData(townCount) {
+      d3.json(`http://34.147.162.172/Circles//Towns/${townCount}`).then((townData) => {
+        if (!townData || townData.length === 0) return console.error("No town data received.");
+        townsData = townData;
+        renderTiles();
+        plotTownsOnMap(townData);
+      }).catch((error) => console.error("Error fetching town data:", error));
     }
 
-    // Initial render of towns
-    renderTowns(townsData);
+    function renderTiles() {
+      const tiles = d3.tile()
+        .size([mapWidth, mapHeight])
+        .scale(mapProjection.scale() * 2 * Math.PI)
+        .translate(mapProjection([0, 0]))();
 
-    // Search functionality
-    const searchInput = document.getElementById("searchInput");
-    const searchButton = document.getElementById("searchButton");
+      tileGroup.selectAll("image").data(tiles).join("image")
+        .attr("xlink:href", (d) => `https://a.tile.openstreetmap.org/${d[2]}/${d[0]}/${d[1]}.png`)
+        .attr("x", (d) => (d[0] + tiles.translate[0]) * tiles.scale)
+        .attr("y", (d) => (d[1] + tiles.translate[1]) * tiles.scale)
+        .attr("width", tiles.scale).attr("height", tiles.scale);
+    }
 
-    searchButton.addEventListener("click", function() {
-      const searchTerm = searchInput.value.trim().toLowerCase();
-      const filteredData = townsData.filter(d => d.name.toLowerCase().includes(searchTerm));
-      // Clear existing circles
-      svg.selectAll("circle").remove();
-      // Render filtered towns
-      renderTowns(filteredData);
+    function plotTownsOnMap(townData) {
+      townGroup.selectAll("circle").data(townData, d => d.Town).join("circle")
+        .attr("cx", d => mapProjection([d.lng, d.lat])[0])
+        .attr("cy", d => mapProjection([d.lng, d.lat])[1])
+        .attr("r", d => Math.sqrt(d.Population) / 20)
+        .attr("fill", "#e74c3c")
+        .attr("stroke", "black")
+        .attr("stroke-width", 0.5)
+        .style("opacity", 0.8)
+        .attr("filter", "url(#blur-filter)")
+        .on("click", (event, d) => {
+          openDrawer(d);
+          highlightSelectedTown(d);
+        });
+
+      enableTownTooltips(townData);
+    }
+
+    function highlightSelectedTown(town) {
+      if (selectedTownSymbol) {
+        selectedTownSymbol.remove();
+      }
+
+      selectedTown = town; // Store selected town data
+
+      selectedTownSymbol = townGroup.append("circle") // Append the circle to townGroup
+        .attr("cx", mapProjection([town.lng, town.lat])[0])
+        .attr("cy", mapProjection([town.lng, town.lat])[1])
+        .attr("r", 10)
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .attr("stroke-width", 3)
+        .attr("stroke-dasharray", "5,5")
+        .attr("pointer-events", "none");
+    }
+
+    function enableTownTooltips(townData) {
+      townGroup.selectAll("circle").on("mouseover", (event, d) => {
+        tooltip.style("opacity", 1).html(`<strong>${d.Town}</strong><br>County: ${d.County}<br>Population: <span class="numbers">${d.Population}</span>`)
+          .style("left", `${event.pageX + 15}px`).style("top", `${event.pageY - 40}px`);
+      }).on("mousemove", event => {
+        tooltip.style("left", `${event.pageX + 15}px`).style("top", `${event.pageY - 40}px`);
+      }).on("mouseout", () => tooltip.style("opacity", 0));
+    }
+
+    function openDrawer(town) {
+      document.getElementById("townName").textContent = town.Town;
+      document.getElementById("townDetails").innerHTML = `
+        <p><strong>Population:</strong> <span class="numbers">${town.Population}</span></p>
+        <p><strong>County:</strong> ${town.County}</p>
+        <p><strong>Latitude:</strong> <span class="numbers">${town.lat}</span></p>
+        <p><strong>Longitude:</strong> <span class="numbers">${town.lng}</span></p>
+      `;
+      const toRadians = deg => deg * (Math.PI / 180);
+      const haversineDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371;
+        const dLat = toRadians(lat2 - lat1);
+        const dLon = toRadians(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      const nearestTowns = townsData.map(t => ({ ...t, distance: haversineDistance(town.lat, town.lng, t.lat, t.lng) }))
+        .sort((a, b) => a.distance - b.distance).slice(1, 6);
+      document.getElementById("nearestTownsList").innerHTML = nearestTowns.map(t => `<li>${t.Town} (Distance: ${t.distance.toFixed(2)} km)</li>`).join('');
+      drawer.classList.add('open');
+      overlay.classList.add('show');
+      mainContent.style.marginRight = '300px';
+    }
+
+    overlay.addEventListener('click', () => {
+      drawer.classList.remove('open');
+      overlay.classList.remove('show');
+      mainContent.style.marginRight = '0';
+      if (selectedTownSymbol) {
+        selectedTownSymbol.remove();
+        selectedTownSymbol = null;
+      }
+    });
+
+    // Define zoom behavior
+    const zoom = d3.zoom().on('zoom', (event) => {
+      tileGroup.attr('transform', event.transform); // Zoom tiles
+      townGroup.attr('transform', event.transform); // Zoom town points
+      townGroup.selectAll("circle").attr("r", d => (Math.sqrt(d.Population) / 20) / event.transform.k); // Adjust size of circles
+      
+      // Adjust size of selected town circle
+      if (selectedTownSymbol) {
+        selectedTownSymbol.attr("r", 10 / event.transform.k);
+      }
+      
+      renderTiles(); // Re-render tiles during zoom
+    });
+
+    // Apply zoom behavior to the svgMap
+    svgMap.call(zoom).on('dblclick.zoom', null);
+
+    // Zoom In button functionality
+    document.getElementById("zoomInButton").addEventListener('click', () => {
+      zoomLevel += zoomStep;
+      svgMap.transition().call(zoom.scaleTo, zoomLevel);
+    });
+
+    // Zoom Out button functionality
+    document.getElementById("zoomOutButton").addEventListener('click', () => {
+      zoomLevel = Math.max(zoomLevel - zoomStep, initialZoomLevel); // Prevent zooming out more than the initial view
+      svgMap.transition().call(zoom.scaleTo, zoomLevel);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAndPlotTownData(displayedTowns);
+      svgMap.transition().call(zoom.scaleTo, initialZoomLevel);
     });
   </script>
 </body>

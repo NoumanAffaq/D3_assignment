@@ -1,7 +1,3 @@
-It looks like you shared the GitHub URL for your D3 assignment project. If you'd like to include this link in your README file, here's an updated version of the README with the link to your repository:
-
----
-
 # D3 Assignment - Interactive Map Visualization
 
 ## Overview
@@ -53,3 +49,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Authors
 
 - **Nouman Affaq** - Developer
+
+
+This read me is created using ChatGPT

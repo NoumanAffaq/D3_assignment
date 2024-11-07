@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D3 Map with Search</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #map-container {
+      max-width: 800px;
+      margin: 20px auto;
+    }
+    #map {
+      width: 100%;
+      height: 600px;
+      border: 1px solid #ccc;
+    }
+    .search-container {
+      margin-bottom: 20px;
+    }
+    .search-container input[type="text"] {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 300px;
+    }
+    .search-container button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+    }
+    .search-container button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div id="map-container">
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search town...">
+      <button id="searchButton">Search</button>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    // Sample town data
+    const townsData = [
+      { name: "New York", population: "8.623 million", lat: 40.7128, lon: -74.0060 },
+      { name: "Los Angeles", population: "3.979 million", lat: 34.0522, lon: -118.2437 },
+      { name: "Chicago", population: "2.705 million", lat: 41.8781, lon: -87.6298 },
+      { name: "Houston", population: "2.325 million", lat: 29.7604, lon: -95.3698 },
+      { name: "Phoenix", population: "1.680 million", lat: 33.4484, lon: -112.0740 }
+      // Add more towns as needed
+    ];
+
+    // D3 map setup
+    const svg = d3.select("#map")
+                  .append("svg")
+                  .attr("width", "100%")
+                  .attr("height", "100%");
+
+    // Function to render towns on the map
+    function renderTowns(data) {
+      svg.selectAll("circle")
+         .data(data)
+         .enter()
+         .append("circle")
+         .attr("cx", d => projection([d.lon, d.lat])[0])
+         .attr("cy", d => projection([d.lon, d.lat])[1])
+         .attr("r", 5)
+         .attr("fill", "steelblue")
+         .attr("opacity", 0.7)
+         .on("mouseover", function(d) {
+            // Tooltip or other interaction on mouseover
+            console.log("Mouseover:", d.name);
+         })
+         .on("click", function(d) {
+            // Handle click event, e.g., show details
+            console.log("Clicked:", d.name);
+         });
+    }
+
+    // Initial render of towns
+    renderTowns(townsData);
+
+    // Search functionality
+    const searchInput = document.getElementById("searchInput");
+    const searchButton = document.getElementById("searchButton");
+
+    searchButton.addEventListener("click", function() {
+      const searchTerm = searchInput.value.trim().toLowerCase();
+      const filteredData = townsData.filter(d => d.name.toLowerCase().includes(searchTerm));
+      // Clear existing circles
+      svg.selectAll("circle").remove();
+      // Render filtered towns
+      renderTowns(filteredData);
+    });
+  </script>
+</body>
+</html>
